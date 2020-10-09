@@ -6,20 +6,38 @@ const http = require('./api/http');
 const apiRouter = require('./routes/api');
 const indexRouter = require('./routes');
 const cors = require('cors');
+const { getData } = require('./data/get');
+const { writeDataToFile } = require('./api/http');
 const app = express();
 const CronJob = require('cron').CronJob;
 
-const job = new CronJob(
+const jobFetch = new CronJob(
   '0 * * * *',
   function () {
-    console.log(`Start cron job, ${moment().format('DD.MM.YYYY hh:mm')}`);
+    console.log(`Start cron job fetch, ${moment().format('DD.MM.YYYY hh:mm')}`);
     http.fetchAll();
-    return;
   },
   null,
   true
 );
-job.start();
+
+const jobHistory = new CronJob(
+  '0 22 * * *',
+  function () {
+    console.log(
+      `Start cron job history, ${moment().format('DD.MM.YYYY hh:mm')}`
+    );
+    const history = getData('history');
+    const currencies = getData('currencies');
+    writeDataToFile(history || currencies, 'history-before');
+    writeDataToFile(currencies, 'history');
+  },
+  null,
+  true
+);
+
+jobFetch.start();
+jobHistory.start();
 http.fetchAll();
 
 app.use(logger('dev'));

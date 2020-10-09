@@ -12,27 +12,14 @@ const {
   getUahBtc,
 } = require('../helpers/format');
 const { has } = require('../helpers/check');
+const { getData } = require('../data/get');
 
-const formatTime = 'hh:mm:ss'
+const formatTime = 'hh:mm:ss';
 const isBetweenTime = () => {
   const now = moment();
   const beforeTime = moment('23:00:00', formatTime);
   const afterTime = moment('01:00:00', formatTime);
   return now.isBetween(beforeTime, afterTime);
-}
-
-const writeDataToFile = (data, file = 'currencies') => {
-  if (data) {
-    fs.writeFile(
-      `./data/${file}.json`,
-      JSON.stringify(data),
-      'utf8',
-      (error) => {
-        if (error) console.log(`[ERROR] ${file} => `, error);
-        console.log(`[SUCCESS] ${file} => writed to ${file}.json`);
-      }
-    );
-  }
 };
 
 const getErrorMessage = (error) => {
@@ -45,6 +32,19 @@ const getErrorMessage = (error) => {
 };
 
 module.exports = {
+  writeDataToFile(data, file = 'currencies') {
+    if (data) {
+      fs.writeFile(
+        `./data/${file}.json`,
+        JSON.stringify(data),
+        'utf8',
+        (error) => {
+          if (error) console.log(`[ERROR] ${file} => `, error);
+          console.log(`[SUCCESS] ${file} => writed to ${file}.json`);
+        }
+      );
+    }
+  },
   fetchMonobank() {
     return new Promise((resolve) => {
       console.log(`[INFO] start fetching "monobank" data`);
@@ -126,16 +126,11 @@ module.exports = {
       if (uahBtc) {
         currencies.push(uahBtc);
       }
-      let history = [];
-      try {
-        const rawdata = fs.readFileSync(
-          path.resolve(__dirname, '../data', 'history.json')
-        );
-        history = [...JSON.parse(rawdata || [])];
-      } catch (err) {
-        writeDataToFile(currencies, 'history');
-        console.error('history', err);
-      }
+      let history = getData('history-before');
+      if (!history) {
+        this.writeDataToFile(currencies, 'history-before');
+        history = [];
+      };
       const mapedCurrencies = currencies.map((exchange) => {
         const getGrow = () => {
           const { rateSell, grow } =
@@ -152,12 +147,8 @@ module.exports = {
         };
         return { ...exchange, grow: getGrow() };
       });
-      writeDataToFile(mapedCurrencies);
-      if (isBetweenTime()) {
-        console.error('[SUCCESS] => set new history');
-        writeDataToFile(mapedCurrencies, 'history');
-      }
-      writeDataToFile(moment(), 'date');
+      this.writeDataToFile(mapedCurrencies);
+      this.writeDataToFile(moment(), 'date');
     });
   },
 };
