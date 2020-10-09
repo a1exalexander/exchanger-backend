@@ -4,6 +4,7 @@ const logger = require('morgan');
 const moment = require('moment');
 const http = require('./api/http');
 const apiRouter = require('./routes/api');
+const indexRouter = require('./routes');
 const cors = require('cors');
 const app = express();
 const CronJob = require('cron').CronJob;
@@ -19,12 +20,14 @@ const job = new CronJob(
   true
 );
 job.start();
+http.fetchAll();
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.get('/', cors(), indexRouter);
 app.use('/api', cors(), apiRouter);
 
 module.exports = app;

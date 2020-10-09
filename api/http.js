@@ -1,5 +1,6 @@
 const axios = require('axios').default;
 const fs = require('fs');
+const path = require('path');
 const moment = require('moment');
 const getUrls = require('./urls');
 const { isArray } = require('lodash');
@@ -11,6 +12,14 @@ const {
   getUahBtc,
 } = require('../helpers/format');
 const { has } = require('../helpers/check');
+
+const formatTime = 'hh:mm:ss'
+const isBetweenTime = () => {
+  const now = moment();
+  const beforeTime = moment('23:00:00', formatTime);
+  const afterTime = moment('01:00:00', formatTime);
+  return now.isBetween(beforeTime, afterTime);
+}
 
 const writeDataToFile = (data, file = 'currencies') => {
   if (data) {
@@ -117,7 +126,37 @@ module.exports = {
       if (uahBtc) {
         currencies.push(uahBtc);
       }
-      writeDataToFile(currencies);
+      let history = [];
+      try {
+        const rawdata = fs.readFileSync(
+          path.resolve(__dirname, '../data', 'history.json')
+        );
+        history = [...JSON.parse(rawdata || [])];
+      } catch (err) {
+        writeDataToFile(currencies, 'history');
+        console.error('history', err);
+      }
+      const mapedCurrencies = currencies.map((exchange) => {
+        const getGrow = () => {
+          const { rateSell, grow } =
+            history.find((historyItem) => historyItem.id === exchange.id) || {};
+          if (!rateSell) {
+            return 0;
+          } else if (Number(exchange.rateSell) < Number(rateSell)) {
+            return -1;
+          } else if (Number(exchange.rateSell) > Number(rateSell)) {
+            return 1;
+          } else {
+            return grow;
+          }
+        };
+        return { ...exchange, grow: getGrow() };
+      });
+      writeDataToFile(mapedCurrencies);
+      if (isBetweenTime()) {
+        console.error('[SUCCESS] => set new history');
+        writeDataToFile(mapedCurrencies, 'history');
+      }
       writeDataToFile(moment(), 'date');
     });
   },
