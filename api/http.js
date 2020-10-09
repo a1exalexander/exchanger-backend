@@ -121,10 +121,10 @@ module.exports = {
     ]).then(([monobank, btc, nationalbank]) => {
       console.log(`[SUCCESS] success fetching "all" data`);
       const uahBtc = getUahBtc(monobank, btc);
-      const syncCash = getSyncCash(monobank, nationalbank);
-      const currencies = [...syncCash, ...btc];
+      const currencies = [...getSyncCash(monobank, nationalbank)];
+      currencies.splice(6, 0, ...btc)
       if (uahBtc) {
-        currencies.push(uahBtc);
+        currencies.splice(6, 0, uahBtc);
       }
       let history = getData('history-before');
       if (!history) {
