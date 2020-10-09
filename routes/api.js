@@ -4,6 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
+router.get(`/`, (req, res, next) => {
+  res.send('Exchanger API');
+});
+
 [...Object.keys(getUrls()), 'date'].forEach((name) => {
   router.get(`/${name}`, (req, res, next) => {
     console.log(name);
