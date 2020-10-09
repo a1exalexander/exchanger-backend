@@ -1,14 +1,24 @@
 const express = require('express');
-const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const apiService = require('./api/http');
-const spaRouter = require('./routes/index');
+const moment = require('moment');
+const http = require('./api/http');
 const apiRouter = require('./routes/api');
 const cors = require('cors');
 const app = express();
+const CronJob = require('cron').CronJob;
 
-apiService.getData();
+const job = new CronJob(
+  '0 * * * *',
+  function () {
+    console.log(`Start cron job, ${moment().format('DD.MM.YYYY hh:mm')}`);
+    http.fetchAll();
+    return;
+  },
+  null,
+  true
+);
+job.start();
 
 app.use(logger('dev'));
 app.use(express.json());

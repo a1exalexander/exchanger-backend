@@ -1,48 +1,124 @@
 const axios = require('axios').default;
 const fs = require('fs');
+const moment = require('moment');
 const getUrls = require('./urls');
+const { isArray } = require('lodash');
+const {
+  mapCurrencies,
+  filterCurrencies,
+  mapBTC,
+  getSyncCash,
+  getUahBtc,
+} = require('../helpers/format');
+const { has } = require('../helpers/check');
 
-const writeDataToFile = (file) => (res) => {
-  console.log(`${file} => Checking response`);
-  if (res && res.data) {
+const writeDataToFile = (data, file = 'currencies') => {
+  if (data) {
     fs.writeFile(
       `./data/${file}.json`,
-      JSON.stringify(res.data),
+      JSON.stringify(data),
       'utf8',
       (error) => {
         if (error) console.log(`[ERROR] ${file} => `, error);
-        console.log(`[SUCCESS] ${file} => RESPONSE writed to ${file}.json`);
+        console.log(`[SUCCESS] ${file} => writed to ${file}.json`);
       }
     );
-    if (file === 'monobank') {
-      fs.writeFile(
-        `./data/date.json`,
-        JSON.stringify(res.headers.date),
-        'utf8',
-        (error) => {
-          if (error) console.log(`[ERROR] date => `, error);
-          console.log(`[SUCCESS] date => RESPONSE writed to date.json`);
-        }
-      );
-    }
   }
 };
 
-const requestData = ([file, url]) => {
-  try {
-    axios
-        .get(url)
-        .then(writeDataToFile(file))
-        .catch((err) => console.log(`[ERROR] ${url} => `, err.response || err));
-  } catch (err) {
-    console.log(err);
-  }
+const getErrorMessage = (error) => {
+  if (has(error, 'response') && has(error.response, 'message'))
+    return error.response.message;
+  if (has(error, 'response') && has(error.response, 'msg'))
+    return error.response.msg;
+  if (has(error, 'message')) return error.message;
+  return error;
 };
 
-const getData = () => {
-  const urls = getUrls();
-  console.log(urls);
-  Object.entries(urls).forEach(requestData);
-};
+module.exports = {
+  fetchMonobank() {
+    return new Promise((resolve) => {
+      console.log(`[INFO] start fetching "monobank" data`);
+      axios
+        .get(getUrls().monobank)
+        .then(({ data }) => {
+          if (isArray(data) && data.length) {
+            const formatedData = data
+              .map(mapCurrencies)
+              .filter(filterCurrencies);
+            console.log(`[SUCCESS] success fetching "monobank" data`);
+            resolve(formatedData);
+          } else {
+            resolve([]);
+          }
+        })
+        .catch((err) => {
+          console.log(`[ERROR] failure fetching "monobank" data`);
+          console.error(getErrorMessage(err.response));
+          resolve([]);
+        });
+    });
+  },
 
-module.exports = { getData };
+  fetchBTC() {
+    return new Promise((resolve) => {
+      console.log(`[INFO] start fetching "btc" data`);
+      axios
+        .get(getUrls().btc)
+        .then(({ data }) => {
+          if (isArray(data) && data.length) {
+            const formatedData = data.map(mapBTC);
+            console.log(`[SUCCESS] success fetching "btc" data`);
+            return resolve(formatedData);
+          } else {
+            resolve([]);
+          }
+        })
+        .catch((err) => {
+          console.log(`[ERROR] failure fetching "btc" data`);
+          console.error(getErrorMessage(err));
+          resolve([]);
+        });
+    });
+  },
+
+  fetchNationalbank() {
+    return new Promise((resolve) => {
+      console.log(`[INFO] start fetching "nationalbank" data`);
+      axios
+        .get(getUrls().nationalbank)
+        .then(({ data }) => {
+          if (isArray(data) && data.length) {
+            console.log(`[SUCCESS] success fetching "nationalbank" data`);
+            resolve(data);
+          } else {
+            resolve([]);
+          }
+        })
+        .catch((err) => {
+          console.log(`[ERROR] failure fetching "nationalbank" data`);
+          console.error(getErrorMessage(err));
+          resolve([]);
+        });
+    });
+  },
+
+  fetchAll() {
+    console.log(`[INFO] start fetching all data`);
+    Promise.all([
+      this.fetchMonobank(),
+      this.fetchBTC(),
+      this.fetchNationalbank(),
+    ]).then(([monobank, btc, nationalbank]) => {
+      console.log(`[SUCCESS] success fetching "all" data`);
+      const uahBtc = getUahBtc(monobank, btc);
+      const syncCash = getSyncCash(monobank, nationalbank);
+      const currencies = [...syncCash, ...btc];
+      if (uahBtc) {
+        currencies.push(uahBtc);
+      }
+      writeDataToFile(currencies);
+      writeDataToFile(moment(), 'date');
+    });
+  },
+};
