@@ -31,4 +31,24 @@ router.get(`/currencies`, (req, res, next) => {
   }
 });
 
+router.get(`/yesterday`, (req, res, next) => {
+  try {
+    const filePath = path.join(__dirname, '../data', `history.json`);
+    const readable = fs.createReadStream(filePath);
+    readable.pipe(res);
+  } catch {
+    res.statusCode(404);
+  }
+});
+
+router.get(`/before-yesterday`, (req, res, next) => {
+  try {
+    const filePath = path.join(__dirname, '../data', `history-before.json`);
+    const readable = fs.createReadStream(filePath);
+    readable.pipe(res);
+  } catch {
+    res.statusCode(404);
+  }
+});
+
 module.exports = router;
