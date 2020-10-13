@@ -16,7 +16,7 @@ module.exports = {
   },
 
   calcByB(val, rate, funcA, funcB) {
-    if (_.isNumber(Number(val))) {
+    if (isNumber(Number(val))) {
       funcA(val);
       const result = val !== '' ? new Big(Number(val)).div(rate) : '';
       funcB(result);

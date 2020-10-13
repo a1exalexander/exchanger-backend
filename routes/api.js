@@ -1,17 +1,16 @@
 const express = require('express');
-const getUrls = require('../api/urls');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-router.get(`/`, (req, res, next) => {
+router.get(`/`, (req, res) => {
   res.send({
     'last update': '/date',
     currencies: '/currencies',
   });
 });
 
-router.get(`/date`, (req, res, next) => {
+router.get(`/date`, (req, res) => {
   try {
     const filePath = path.join(__dirname, '../data', `date.json`);
     const readable = fs.createReadStream(filePath);
@@ -21,7 +20,7 @@ router.get(`/date`, (req, res, next) => {
   }
 });
 
-router.get(`/currencies`, (req, res, next) => {
+router.get(`/currencies`, (req, res) => {
   try {
     const filePath = path.join(__dirname, '../data', `currencies.json`);
     const readable = fs.createReadStream(filePath);
@@ -31,7 +30,7 @@ router.get(`/currencies`, (req, res, next) => {
   }
 });
 
-router.get(`/yesterday`, (req, res, next) => {
+router.get(`/yesterday`, (req, res) => {
   try {
     const filePath = path.join(__dirname, '../data', `history.json`);
     const readable = fs.createReadStream(filePath);
@@ -41,7 +40,7 @@ router.get(`/yesterday`, (req, res, next) => {
   }
 });
 
-router.get(`/before-yesterday`, (req, res, next) => {
+router.get(`/before-yesterday`, (req, res) => {
   try {
     const filePath = path.join(__dirname, '../data', `history-before.json`);
     const readable = fs.createReadStream(filePath);

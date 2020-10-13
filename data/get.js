@@ -5,9 +5,10 @@ module.exports = {
   getData(name) {
     try {
       const rawdata = fs.readFileSync(path.resolve(__dirname, `${name}.json`));
-      return JSON.parse(rawdata);
+      console.log(`[DEBUG] [rawdata "${name}"]`, typeof rawdata);
+      return rawdata ? JSON.parse(rawdata) : null;
     } catch (err) {
-      console.error(name, err);
+      console.error(`[ERROR] [getData] [${name}]`, err);
       return null;
     }
   },

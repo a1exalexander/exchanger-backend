@@ -1,6 +1,6 @@
+/* eslint-disable node/prefer-promises/fs */
 const axios = require('axios').default;
 const fs = require('fs');
-const path = require('path');
 const moment = require('moment');
 const getUrls = require('./urls');
 const { isArray } = require('lodash');
@@ -14,14 +14,6 @@ const {
 const { has } = require('../helpers/check');
 const { getData } = require('../data/get');
 
-const formatTime = 'hh:mm:ss';
-const isBetweenTime = () => {
-  const now = moment();
-  const beforeTime = moment('23:00:00', formatTime);
-  const afterTime = moment('01:00:00', formatTime);
-  return now.isBetween(beforeTime, afterTime);
-};
-
 const getErrorMessage = (error) => {
   if (has(error, 'response') && has(error.response, 'message'))
     return error.response.message;
@@ -34,6 +26,7 @@ const getErrorMessage = (error) => {
 module.exports = {
   writeDataToFile(data, file = 'currencies') {
     if (data) {
+      console.log(`[DEBUG] [writeDataToFile ${file}]`, typeof data);
       fs.writeFile(
         `./data/${file}.json`,
         JSON.stringify(data),
@@ -122,7 +115,7 @@ module.exports = {
       console.log(`[SUCCESS] success fetching "all" data`);
       const uahBtc = getUahBtc(monobank, btc);
       const currencies = [...getSyncCash(monobank, nationalbank)];
-      currencies.splice(6, 0, ...btc)
+      currencies.splice(6, 0, ...btc);
       if (uahBtc) {
         currencies.splice(6, 0, uahBtc);
       }
@@ -130,7 +123,7 @@ module.exports = {
       if (!history) {
         this.writeDataToFile(currencies, 'history-before');
         history = [];
-      };
+      }
       const mapedCurrencies = currencies.map((exchange) => {
         const getGrow = () => {
           const { rateSell, grow } =
