@@ -2,6 +2,7 @@ const { getData } = require('./data/get');
 const moment = require('moment');
 const { writeDataToFile } = require('./api/http');
 const http = require('./api/http');
+const { isArray } = require('lodash');
 const CronJob = require('cron').CronJob;
 
 const cronJobFn = () => {
@@ -9,22 +10,23 @@ const cronJobFn = () => {
   http.fetchAll();
   const yesterday = moment().subtract(1, 'day');
   const beforeYesterday = moment().subtract(2, 'day');
-  const checkedYesterday = getData('yesterday');
-  const checkedBeforeYesterday = getData('before-yesterday');
+  const dateYesterday = getData('yesterday');
+  const dateBeforeYesterday = getData('before-yesterday');
   const currencies = getData('currencies');
   const history = getData('history');
-  const isSameYestardey = moment(yesterday).isSame(checkedYesterday, 'day');
+  const historyBefore = getData('history-before');
+  const isSameYestardey = moment(yesterday).isSame(dateYesterday, 'day');
   const isSameBeforeYestardey = moment(beforeYesterday).isSame(
-    checkedBeforeYesterday,
+    dateBeforeYesterday,
     'day'
   );
   console.log(`[DEBUG] Is Same Yesterday => ${isSameYestardey}`);
   console.log(`[DEBUG] Is Same Before Yesterday => ${isSameBeforeYestardey}`);
-  if (!isSameYestardey) {
+  if (!isSameYestardey || !isArray(history) || history.length < 3) {
     writeDataToFile(currencies, 'history');
     writeDataToFile(yesterday, 'yesterday');
   }
-  if (!isSameBeforeYestardey) {
+  if (!isSameBeforeYestardey || !isArray(historyBefore) || historyBefore.length < 3) {
     writeDataToFile(history || currencies, 'history-before');
     writeDataToFile(yesterday, 'before-yesterday');
   }
